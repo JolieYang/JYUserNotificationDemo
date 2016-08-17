@@ -39,7 +39,6 @@
         }
     }
     
-    
     return YES;
 }
 
@@ -48,7 +47,7 @@
 #ifdef __IPHONE_10_0
     // 使用UserNotificationC.framwork
 #endif
-#ifdef __IPHONE_7_0
+#ifdef __IPHONE_8_0
     
 #endif
 }
@@ -56,12 +55,16 @@
 // 默认初始化本地通知
 - (void)initLocalNotification {
     // 是否已经授权接收本地通知
+#ifdef __IPHONE_10_0
+#endif
+#ifdef __IPHONE_8_0
     if ([[UIApplication sharedApplication] currentUserNotificationSettings].types != UIUserNotificationTypeNone) {
         [self addLocalNotification];
     } else {
         // 请求授权本地通知
         [[UIApplication sharedApplication] registerUserNotificationSettings:[UIUserNotificationSettings settingsForTypes:UIUserNotificationTypeAlert | UIUserNotificationTypeBadge | UIUserNotificationTypeSound categories:nil]];
     }
+#endif
 }
 // 发起本地通知
 - (void)addLocalNotification {
