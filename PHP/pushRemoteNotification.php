@@ -1,13 +1,14 @@
 <?php
 
-// deviceToken，没有空格
-$deviceToken = 'd71ea28044e942c92678ab9ae010f3974c76e21c2c90d0b7b9591047e45941ce';
-
+// deviceToken
+$deviceToken = '4d80928a 33c724a0 f7648c7d cae3775b f54e3cd2 b0215acd 32d9e406 9dae104e';
+// 去除空格
+$deviceToken = str_replace(' ', '', $deviceToken);
 // pem文件密码
 $passphrase = 'demo';
 
 // 消息内容
-$message = '这是一条测试消息';
+$message = '这是条试消息';
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -29,8 +30,7 @@ echo 'Connected to APNS' . PHP_EOL;
 $body['aps'] = array(
 	'alert' => $message,
 	'sound' => 'default',
-	'badge' => 2,
-	'content-available' => 1 
+	'badge' => 1
 	);
 
 $payload = json_encode($body);
