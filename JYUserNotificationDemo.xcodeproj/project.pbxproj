@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		A067F0071D65BB0E003140D6 /* SimpleAppDelegate.m in Sources */ = {isa = PBXBuildFile; fileRef = A067F0061D65BB0E003140D6 /* SimpleAppDelegate.m */; };
 		A07FE1961D64438F00402F49 /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = A07FE1951D64438F00402F49 /* main.m */; };
 		A07FE1991D64438F00402F49 /* AppDelegate.m in Sources */ = {isa = PBXBuildFile; fileRef = A07FE1981D64438F00402F49 /* AppDelegate.m */; };
 		A07FE19C1D64438F00402F49 /* ViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = A07FE19B1D64438F00402F49 /* ViewController.m */; };
@@ -16,6 +17,8 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		A067F0051D65BB0E003140D6 /* SimpleAppDelegate.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SimpleAppDelegate.h; sourceTree = "<group>"; };
+		A067F0061D65BB0E003140D6 /* SimpleAppDelegate.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SimpleAppDelegate.m; sourceTree = "<group>"; };
 		A07FE1911D64438E00402F49 /* JYUserNotificationDemo.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = JYUserNotificationDemo.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		A07FE1951D64438F00402F49 /* main.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = main.m; sourceTree = "<group>"; };
 		A07FE1971D64438F00402F49 /* AppDelegate.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = AppDelegate.h; sourceTree = "<group>"; };
@@ -67,6 +70,8 @@
 				A07FE1A21D64438F00402F49 /* LaunchScreen.storyboard */,
 				A07FE1A51D64438F00402F49 /* Info.plist */,
 				A07FE1941D64438F00402F49 /* Supporting Files */,
+				A067F0051D65BB0E003140D6 /* SimpleAppDelegate.h */,
+				A067F0061D65BB0E003140D6 /* SimpleAppDelegate.m */,
 			);
 			path = JYUserNotificationDemo;
 			sourceTree = "<group>";
@@ -158,6 +163,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				A067F0071D65BB0E003140D6 /* SimpleAppDelegate.m in Sources */,
 				A07FE19C1D64438F00402F49 /* ViewController.m in Sources */,
 				A07FE1991D64438F00402F49 /* AppDelegate.m in Sources */,
 				A07FE1961D64438F00402F49 /* main.m in Sources */,
