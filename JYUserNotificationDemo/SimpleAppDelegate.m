@@ -8,13 +8,29 @@
 
 // https://developer.apple.com/library/ios/documentation/NetworkingInternet/Conceptual/RemoteNotificationsPG/Chapters/IPhoneOSClientImp.html#//apple_ref/doc/uid/TP40008194-CH103-SW26
 
-// 消息
+// http/2  实现强制使用HTTPS
+
+// 消息 远程推送的有效负载数据， 使用HTTP/2支持的最大负载量为4096比特，即512字节，传统的则为256个字节。
 //{ "aps" :{
 //     "alert" : "You're invited",
 //     "category" : "INVITE_CATEGORY",
-//    "sound" : "default"
+//     "sound" : "default",
+//     "content-availabel" : 1 // 静默推送，当收到静默推送消息的时候，应用可在后台从服务器获取数据或者在后台执行一会操作。如果是静默推送确保aps字典中没有alert,sound,badge等信息。
 // }
 //}
+
+// alert
+//{ "aps" :{
+//    "alert" : {
+//        "action-loc-key" : "Open",
+//        "body" : "Hello, rose"
+//    },
+//     "category" : "INVITE_CATEGORY",
+//     "sound" : "default",
+//     "content-availabel" : 1
+// }
+//}
+
 #import "SimpleAppDelegate.h"
 #import "ViewController.h"
 
@@ -32,6 +48,8 @@
 
 // devicetoken 可以识别到是哪台设备的哪个应用
 // 推送信息是JSON格式
+// 远程推送是无法确保一定会送达用户设备，所以不要将一些敏感重要数据通过远程推送传送，且推送的数据是无法通过任何手段恢复的，丢失就丢失了。
+
 
 - (BOOL)application:(UIApplication *)application didFinishLaunchingWithOptions:(NSDictionary *)launchOptions {
     // Override point for customization after application launch.
@@ -42,11 +60,13 @@
     
     // 如果使用didReceiveRemoteNotification:fetchCompletionHandler回调则会处理程序终结的推送信息，则无需在didFinishLaunchingWithOptions中再重复获取该信息，但本地通知还是要在这里接收。
     if (launchOptions) {//  应用退出后再进入调用，点击提示信息(横幅，通知中心，提示框)进入应用。ps:通知中心有推送消息，但如果直接点击应用图标进入则无法获取到储存的通知信息
-        NSDictionary *localUserInfo = [launchOptions objectForKey:UIApplicationLaunchOptionsLocalNotificationKey];
-        if (localUserInfo) {
+        UILocalNotification *localNotification = [launchOptions objectForKey:UIApplicationLaunchOptionsLocalNotificationKey];
+        if (localNotification) {
             // 收到本地通知
             ViewController *vc = (ViewController *)self.window.rootViewController;
-            vc.localNotificationLB.text = @"didFinishLaunchingWithOpitions";
+            NSString *alertMsg = [localNotification.userInfo objectForKey:@"alert"];
+            vc.localNotificationLB.text = alertMsg;
+            application.applicationIconBadgeNumber = localNotification.applicationIconBadgeNumber - 1;
         }
     }
     
@@ -83,8 +103,8 @@
     }
     if (!self.registered) {
         // 请求授权本地通知
-        // Categories 用于标识通知的目的 通过categories标志符决定如何处理通知。 从iOS8开始，还可以在通知处添加按钮等，主要是提供入口让用户可以快速的相应该推送信息。UIMutableUserNotificationAction
-//        UIUserNotificationSettings *notificationSettings = [UIUserNotificationSettings settingsForTypes:UIUserNotificationTypeSound | UIUserNotificationTypeBadge | UIUserNotificationTypeAlert categories: nil];
+        // Categories 用于标识通知的目的 通过categories标志符决定如何处理通知。 从iOS8开始，还可以在通知处添加按钮等，主要是提供入口让用户可以快速的响应该推送信息。UIMutableUserNotificationAction
+        // 可交互的通知以及可以处理用户输入的通知(通知中心直接回复内容)
         UIMutableUserNotificationCategory *category = [self createUNCategoryObject];
         UIUserNotificationSettings *notificationSettings = [UIUserNotificationSettings settingsForTypes:UIUserNotificationTypeSound | UIUserNotificationTypeBadge | UIUserNotificationTypeAlert categories: [NSSet setWithObject: category]];
         [[UIApplication sharedApplication] registerUserNotificationSettings:notificationSettings];
