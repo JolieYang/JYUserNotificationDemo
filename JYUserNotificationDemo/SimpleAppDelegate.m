@@ -21,7 +21,7 @@
 @interface SimpleAppDelegate() {
 }
 
-@property (nonatomic, assign) BOOL registered;// 注册远程推送并获取到deviceToken
+@property (nonatomic, assign) BOOL registered;// 注册通知配置
 
 @end
 
@@ -90,6 +90,7 @@
         [[UIApplication sharedApplication] registerUserNotificationSettings:notificationSettings];
         
         
+        self.registered = YES;
         self.userNotificationType = UserNotificationRemote;
     }
 #endif
@@ -211,22 +212,27 @@
 - (void)application:(UIApplication *)application didRegisterForRemoteNotificationsWithDeviceToken:(NSData *)deviceToken {
     // Device tokens always change when the user restores backup data to a new device or computer or reinstalls the operating system.
     // deviceToken除了在重新安装应用时会修改，还有些特殊情况(比如升级系统,重装系统，恢复备份数据到新设备)devicetoken也会修改
-    // 网上看到资料，[todo]iOS9.0以后的版本卸载重装才会改变,iOS7与iOS8是不会改变的
-    // 考虑到同一个帐号可能会在多台设备上登陆，因而同一个帐号会有多个devicetoken，通过设备UUID+deviceToken确保一个设备只有一个deviceToken。
-    if (!self.registered) {
-        self.registered = YES;
-        [[NSUserDefaults standardUserDefaults] setObject:deviceToken forKey:@"devicetoken"];
-    }
-    const void *deviceTokenBytes = [deviceToken bytes];
-    [self sendProviderDeviceToken:deviceTokenBytes];
+    // 网上看到资料，[todo]iOS9.0以后的版本卸载重装才会改变,iOS7与iOS8是不会改变的,不知是否是这样
+    [self addDeviceToken:deviceToken];
     NSLog(@"devicetoken:%@", deviceToken);
 }
 // 获取deviceToken失败,查看错误信息吧
 - (void)application:(UIApplication *)application didFailToRegisterForRemoteNotificationsWithError:(NSError *)error {
+    // todo 获取错误日志
     NSLog(@"Error in Regist devicetoken: %@", error.localizedDescription);
 }
-// 发送deviceToken给网关
-- (void)sendProviderDeviceToken:(const void *)deviceToken {
+- (void)addDeviceToken:(NSData *)deviceToken {
     // 判断deviceToken 是否更改
+     NSString *deviceTokenKey = @"devicetoken";
+     NSData *existToken = [[NSUserDefaults standardUserDefaults] valueForKey:deviceTokenKey];
+     if (![existToken isEqualToData:deviceToken]) {// 原先并没有上传过devicetoken与devicetoken更改都会上传到服务器上
+         [[NSUserDefaults standardUserDefaults] setObject:deviceToken forKey:deviceTokenKey];
+         // todo 考虑到同一个帐号可能会在多台设备上登陆，因而同一个帐号会有多个devicetoken，通过设备UUID+deviceToken确保一个设备只有一个deviceToken。
+         [self sendProviderDeviceToken:deviceToken];
+     }
+    
+}
+// 发送deviceToken给网关，也就是上传到服务器上
+- (void)sendProviderDeviceToken:(NSData *)deviceToken {
 }
 @end
