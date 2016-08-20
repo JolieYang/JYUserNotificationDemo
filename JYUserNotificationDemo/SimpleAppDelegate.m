@@ -8,6 +8,13 @@
 
 // https://developer.apple.com/library/ios/documentation/NetworkingInternet/Conceptual/RemoteNotificationsPG/Chapters/IPhoneOSClientImp.html#//apple_ref/doc/uid/TP40008194-CH103-SW26
 
+// 消息
+//{ "aps" :{
+//     "alert" : "You're invited",
+//     "category" : "INVITE_CATEGORY",
+//    "sound" : "default"
+// }
+//}
 #import "SimpleAppDelegate.h"
 #import "ViewController.h"
 
@@ -33,6 +40,16 @@
     
     [self registUserNotification];// 注册远程推送消息，即默认也注册了本地推送消息
     
+    // 如果使用didReceiveRemoteNotification:fetchCompletionHandler回调则会处理程序终结的推送信息，则无需在didFinishLaunchingWithOptions中再重复获取该信息，但本地通知还是要在这里接收。
+    if (launchOptions) {//  应用退出后再进入调用，点击提示信息(横幅，通知中心，提示框)进入应用。ps:通知中心有推送消息，但如果直接点击应用图标进入则无法获取到储存的通知信息
+        NSDictionary *localUserInfo = [launchOptions objectForKey:UIApplicationLaunchOptionsLocalNotificationKey];
+        if (localUserInfo) {
+            // 收到本地通知
+            ViewController *vc = (ViewController *)self.window.rootViewController;
+            vc.localNotificationLB.text = @"didFinishLaunchingWithOpitions";
+        }
+    }
+    
     return YES;
 }
 
@@ -47,6 +64,7 @@
 #ifdef __IPHONE_8_0
     if (self.userNotificationType) {
         //  注册远程推送信息 devicetoken可能会改变，所以每次进入应用都要注册一次，并将devicetoken备份到服务器。
+        // devicetoken的获取不会造成性能问题，苹果已经做过优化
         [[UIApplication sharedApplication] registerForRemoteNotifications];
     }
 #endif
@@ -96,15 +114,20 @@
     
     return inviteCategory;
 }
+// 本地通知-接收用户点击通知提示信息自定义按钮事件
 - (void)application:(UIApplication *)application handleActionWithIdentifier:(nullable NSString *)identifier forLocalNotification:(UILocalNotification *)notification completionHandler:(void(^)())completionHandler {
+    // identifier为CategoryAction的唯一标识符
     if ([identifier isEqualToString:@"Accept_identifier"]) {
         NSLog(@"rose show invite");
     }
     completionHandler();
     
 }
+// 远程推送-接收用户点击通知提示信息自定义按钮事件
 - (void)application:(UIApplication *)application handleActionWithIdentifier:(nullable NSString *)identifier forRemoteNotification:(NSDictionary *)userInfo withResponseInfo:(NSDictionary *)responseInfo completionHandler:(void(^)())completionHandler {
+    // identifier为CategoryAction的唯一标识符
     
+    completionHandler();
 }
 
 

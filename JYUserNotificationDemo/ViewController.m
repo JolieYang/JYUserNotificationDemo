@@ -49,7 +49,7 @@
     
     localNotification.category = @"INVITE_CATEGORY";
     // 2.3 设置用户信息
-    localNotification.userInfo = @{@"id":@1, @"alert":@"rose",@"category":@"INVITE_CATEGORY"};
+    localNotification.userInfo = @{@"id":@1, @"alert":@"rose"};
     
     // 3. 发起通知
     [[UIApplication sharedApplication] scheduleLocalNotification:localNotification];
