@@ -15,7 +15,7 @@
 //     "alert" : "You're invited",
 //     "category" : "INVITE_CATEGORY",
 //     "sound" : "default",
-//     "content-availabel" : 1 // 静默推送，当收到静默推送消息的时候，应用可在后台从服务器获取数据或者在后台执行一会操作。如果是静默推送确保aps字典中没有alert,sound,badge等信息。
+//     "content-availabel" : 1 // 静默推送，当收到静默推送消息的时候，应用会在后台从服务器获取数据或者在后台执行一会操作。如果是静默推送确保aps字典中没有alert,sound,badge等信息。
 // }
 //}
 
@@ -33,8 +33,13 @@
 
 #import "SimpleAppDelegate.h"
 #import "ViewController.h"
+#import <CoreLocation/CoreLocation.h>
 
-@interface SimpleAppDelegate() {
+#define LOC_COORDINATE CLLocationCoordinate2DMake(123,123) // CLLocationCoordinate2D 
+#define LOC_RADIUS 17.0 //CLLocationDistance
+#define LOC_IDENTIFIER @"identifier"
+
+@interface SimpleAppDelegate()<CLLocationManagerDelegate> {
 }
 
 @property (nonatomic, assign) BOOL registered;// 注册通知配置
@@ -49,6 +54,7 @@
 // devicetoken 可以识别到是哪台设备的哪个应用
 // 推送信息是JSON格式
 // 远程推送是无法确保一定会送达用户设备，所以不要将一些敏感重要数据通过远程推送传送，且推送的数据是无法通过任何手段恢复的，丢失就丢失了。
+// 基于地理位置的本地推送 当用户进入或离开指定的地理范围内，会接收到推送信息。首先，应用需要支持Core Location
 
 
 - (BOOL)application:(UIApplication *)application didFinishLaunchingWithOptions:(NSDictionary *)launchOptions {
@@ -116,41 +122,6 @@
 #endif
 }
 
-#pragma mark ActionableNotifications
-- (UIMutableUserNotificationAction *)createUNActionObject {
-    UIMutableUserNotificationAction *acceptAction = [[UIMutableUserNotificationAction alloc] init];
-    acceptAction.identifier = @"Accept_identifier";
-    acceptAction.title = @"Accept";// button上面的字
-    acceptAction.activationMode = UIUserNotificationActivationModeBackground;// 激活后台应用程序，除非已在前台 ...?没懂
-    acceptAction.destructive = NO;// ...?
-    acceptAction.authenticationRequired = NO;// 执行该操作是否需要用户的认证(指是否需要用户解锁设备才可执行该操作)
-    
-    return acceptAction;
-}
-- (UIMutableUserNotificationCategory *)createUNCategoryObject {
-    UIMutableUserNotificationCategory *inviteCategory = [[UIMutableUserNotificationCategory alloc] init];
-    inviteCategory.identifier = @"INVITE_CATEGORY";
-    [inviteCategory setActions:@[[self createUNActionObject]] forContext:UIUserNotificationActionContextDefault];
-    [inviteCategory setActions:@[[self createUNActionObject]] forContext:UIUserNotificationActionContextMinimal];
-    
-    return inviteCategory;
-}
-// 本地通知-接收用户点击通知提示信息自定义按钮事件
-- (void)application:(UIApplication *)application handleActionWithIdentifier:(nullable NSString *)identifier forLocalNotification:(UILocalNotification *)notification completionHandler:(void(^)())completionHandler {
-    // identifier为CategoryAction的唯一标识符
-    if ([identifier isEqualToString:@"Accept_identifier"]) {
-        NSLog(@"rose show invite");
-    }
-    completionHandler();
-    
-}
-// 远程推送-接收用户点击通知提示信息自定义按钮事件
-- (void)application:(UIApplication *)application handleActionWithIdentifier:(nullable NSString *)identifier forRemoteNotification:(NSDictionary *)userInfo withResponseInfo:(NSDictionary *)responseInfo completionHandler:(void(^)())completionHandler {
-    // identifier为CategoryAction的唯一标识符
-    
-    completionHandler();
-}
-
 
 // 移除本地通知
 - (void)removeLocalNotification {
@@ -166,6 +137,12 @@
         NSLog(@"UIApplicationStateInactive");
     } else {
         NSLog(@"UIApplicationStateBackground");
+    }
+    // 基于地理位置的本地通知
+    // #pragma mark 基于地理位置的本地通知
+    CLRegion *region = notification.region;
+    if (region) {
+        // 进入了指定区域(地理位置)
     }
     NSDictionary *userInfo = notification.userInfo;
     ViewController *vc = [self showNotificationMsgOnViewController];
@@ -212,6 +189,8 @@
     return vc;
 }
 
+
+
 - (void)applicationWillEnterForeground:(UIApplication *)application {
     // Called as part of the transition from the background to the inactive state; here you can undo many of the changes made on entering the background.
     // 进入程序后去除图标数字
@@ -254,5 +233,70 @@
 }
 // 发送deviceToken给网关，也就是上传到服务器上
 - (void)sendProviderDeviceToken:(NSData *)deviceToken {
+}
+
+#pragma mark ActionableNotifications
+- (UIMutableUserNotificationAction *)createUNActionObject {
+    UIMutableUserNotificationAction *acceptAction = [[UIMutableUserNotificationAction alloc] init];
+    acceptAction.identifier = @"Accept_identifier";
+    acceptAction.title = @"Accept";// button上面的字
+    acceptAction.activationMode = UIUserNotificationActivationModeBackground;// 激活后台应用程序，除非已在前台 ...?没懂
+    acceptAction.destructive = NO;// ...?
+    acceptAction.authenticationRequired = NO;// 执行该操作是否需要用户的认证(指是否需要用户解锁设备才可执行该操作)
+    
+    return acceptAction;
+}
+- (UIMutableUserNotificationCategory *)createUNCategoryObject {
+    UIMutableUserNotificationCategory *inviteCategory = [[UIMutableUserNotificationCategory alloc] init];
+    inviteCategory.identifier = @"INVITE_CATEGORY";
+    [inviteCategory setActions:@[[self createUNActionObject]] forContext:UIUserNotificationActionContextDefault];
+    [inviteCategory setActions:@[[self createUNActionObject]] forContext:UIUserNotificationActionContextMinimal];
+    
+    return inviteCategory;
+}
+// 本地通知-接收用户点击通知提示信息自定义按钮事件
+- (void)application:(UIApplication *)application handleActionWithIdentifier:(nullable NSString *)identifier forLocalNotification:(UILocalNotification *)notification completionHandler:(void(^)())completionHandler {
+    // identifier为CategoryAction的唯一标识符
+    if ([identifier isEqualToString:@"Accept_identifier"]) {
+        NSLog(@"rose show invite");
+    }
+    completionHandler();
+    
+}
+// 远程推送-接收用户点击通知提示信息自定义按钮事件
+- (void)application:(UIApplication *)application handleActionWithIdentifier:(nullable NSString *)identifier forRemoteNotification:(NSDictionary *)userInfo withResponseInfo:(NSDictionary *)responseInfo completionHandler:(void(^)())completionHandler {
+    // identifier为CategoryAction的唯一标识符
+    
+    completionHandler();
+}
+
+#pragma mark 基于地理位置的本地通知
+- (void)registLocationBasedLocalNotification {
+}
+// 第一次发起授权地理服务请求时，应用会询问用户是否允许该请求。Info.plist中NSLocationWhenInUseUsageDescription可以配置发起请求时显示的文本,该属性是必须配置的，如果未配置则无法开启该服务
+- (void)authorizeLocation {
+    CLLocationManager *locManager = [[CLLocationManager alloc] init];
+    locManager.delegate = self;
+    // 发起授权跟踪用户的地理位置并启用基于地理位置的本地通知
+    [locManager requestWhenInUseAuthorization];
+}
+#pragma mark CLLocationManagerDelegate
+- (void)locationManager:(CLLocationManager *)manager didChangeAuthorizationStatus:(CLAuthorizationStatus)status {
+    BOOL canUseLocationNotifications = (status == kCLAuthorizationStatusAuthorizedWhenInUse);
+    
+    if (canUseLocationNotifications) {
+        [self startShowingNotifications];
+    }
+    
+}
+// LOC_COORDINATE LOC_RADIUS LOC_IDENTIFIER
+- (void)startShowingNotifications {
+    UILocalNotification *localNotification = [[UILocalNotification alloc] init];
+    localNotification.alertBody = @"You have arrived";
+    localNotification.regionTriggersOnce = YES;
+    
+    localNotification.region = [[CLCircularRegion alloc] initWithCenter:LOC_COORDINATE radius:LOC_RADIUS identifier:LOC_IDENTIFIER];
+    
+    [[UIApplication sharedApplication] scheduleLocalNotification:localNotification];
 }
 @end
