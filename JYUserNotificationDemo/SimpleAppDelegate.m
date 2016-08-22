@@ -15,7 +15,7 @@
 //     "alert" : "You're invited",
 //     "category" : "INVITE_CATEGORY",
 //     "sound" : "default",
-//     "content-availabel" : 1 // 静默推送，当收到静默推送消息的时候，应用会在后台从服务器获取数据或者在后台执行一会操作。如果是静默推送确保aps字典中没有alert,sound,badge等信息。
+//     "content-availabel" : 1 // 静默推送，当收到静默推送消息的时候，应用会在后台从服务器获取数据或者在后台执行一会操作。
 // }
 //}
 
@@ -51,11 +51,11 @@
 // 每台设备会建立一个与APNs认证且加密过的长连接，并通过长连接接收推送信息。
 // 注册， 发起， 接收展示
 
-// devicetoken 可以识别到是哪台设备的哪个应用
+// devicetoken 可以识别到是哪台设备的哪个应用 是基于UDID通过算法生成的标志符（算法苹果没有公开）
 // 推送信息是JSON格式
-// 远程推送是无法确保一定会送达用户设备，所以不要将一些敏感重要数据通过远程推送传送，且推送的数据是无法通过任何手段恢复的，丢失就丢失了。
+// 远程推送是无法确保一定会送达用户设备，所以不要将一些敏感重要数据通过远程推送传送，且推送的数据是无法通过任何手段恢复的，丢失就丢失了。当APNs尝试推送信息给设备，如果设备不在线则会在有限的时间保存，等连接上设备推送给设备。但只会保存最近的一条信息，如果有多条信息发给离线的设备，新的推送信息会取代旧的信息，旧的信息也就会被丢弃。并且离线时间比较久的话，连最近的一条推送信息也会被丢弃。
 // 基于地理位置的本地推送 当用户进入或离开指定的地理范围内，会接收到推送信息。首先，应用需要支持Core Location
-
+// 静默通知 收到通知后，没有通知提醒，后台执行程序（更新内容操作等），用户无需点通知，打开应用，就会进入didReceiveRemoteNotification:fetchCompletionHandler回调,文档中提及如果是静默推送确保aps字典中没有alert,sound,badge等信息。在设置content-available为1的前提下， 测试了下添加alert，通知中心就会显示这条推送消息，这还叫静默通知吗,点击该信息就又进入回调中了 ！sound就是会听到声音； badge就是会看到图标，通知中心没有显示信息，但也很不友好啊。 －－22rd,August,2016
 
 - (BOOL)application:(UIApplication *)application didFinishLaunchingWithOptions:(NSDictionary *)launchOptions {
     // Override point for customization after application launch.
@@ -129,10 +129,10 @@
 }
 // 本地通知 -- 应用在后台，点击通知中心/点击横幅/点击弹窗进入 ｜ 应用在前台收到本地通知进入该回调
 - (void)application:(UIApplication *)application didReceiveLocalNotification:(UILocalNotification *)notification  {
-    if ([UIApplication sharedApplication].applicationState == UIApplicationStateActive) {
+    if (application.applicationState == UIApplicationStateActive) {
         // 应用在前台
         NSLog(@"UIApplicationStateactive");
-    } else if ([UIApplication sharedApplication].applicationState == UIApplicationStateInactive) {
+    } else if (application.applicationState == UIApplicationStateInactive) {
         // 应用从后台进入前台
         NSLog(@"UIApplicationStateInactive");
     } else {
@@ -150,11 +150,12 @@
 }
 
 // 远程推送
+// 静默推送， 推送信息到达设备后会调用该回调，点击通知信息进入应用后又会再一次进入该回调。那岂不是执行了两次该回调，也就是相同的操作执行两次吗？ 还是说通过当前应用在前后台 分离处理
 - (void)application:(UIApplication *)application didReceiveRemoteNotification:(NSDictionary *)userInfo fetchCompletionHandler:(void (^)(UIBackgroundFetchResult result))completionHandler {
-    if ([UIApplication sharedApplication].applicationState == UIApplicationStateActive) {
+    if (application.applicationState == UIApplicationStateActive) {
         // 应用在前台
         NSLog(@"UIApplicationStateactive");
-    } else if ([UIApplication sharedApplication].applicationState == UIApplicationStateInactive) {
+    } else if (application.applicationState == UIApplicationStateInactive) {
         // 应用从后台进入前台
         NSLog(@"UIApplicationStateInactive");
     } else {
@@ -162,10 +163,17 @@
     }
     userInfo = [userInfo valueForKey:@"aps"];
     ViewController *vc = [self showNotificationMsgOnViewController];
-    vc.remoteNotificationLB.text = [NSString stringWithFormat:@"静默通知：%@", [userInfo valueForKey:@"alert"]];
+    vc.remoteNotificationLB.text = [NSString stringWithFormat:@"%@", [userInfo valueForKey:@"alert"]];
     
-    if ([userInfo valueForKey:@"content-available"]) {
+    // [solved]Question: content-available 设为1 代表静默推送，1)但我测试的时候只要aps中添加了content-available属性不伦值为0还是1都会进入该回调，且获取 contentAvailabel值时都是返回true 。2)静默推送 不懂  文档里也是说值设为1的时候代表静默推送，不知道是哪里出了问题 22rd,August,2016 3) 当1，2问题解决的时候，又出现了一个新的问题，什么时候需要将content-availabel设为0呢，也就是非静默通知。 设为1的情况就是需要在不显示提醒用户的情况执行数据更新等后台工作。又比如设置了 content-available又设置了badge,soudn,alert信息，那已经不是静默通知了，为什么设计成这样。 4) 发送静默推送的时候如果应用在前台的时候应该怎么处理呢
+    // Answer: 1)对于这个问题，文档中有提及，确实在只要包含该属性则会进入该回调。2)对于第二个问题，文档中有声明该属性的类型为number类型。
+    // Think: 3) content-available 这个是内容可用的意思， 后台静默通知 内容可用 设为0则代表内容不可用，那推送给用户干嘛，
+    // 使用场景： 1) 通过静默通知获取用户当前位置发送给服务器端;2) 后台下载(获取内容更新)下次进入应用时可直接读取，比如Email更新,订阅内容同步;
+    NSNumber *contentNumber= [userInfo valueForKey:@"content-available"];
+    BOOL contentAvailable = contentNumber.boolValue;
+    if (contentAvailable) {
         // 静默通知
+        NSLog(@"静默推送");
         NSURLSessionConfiguration *configuration = [NSURLSessionConfiguration defaultSessionConfiguration];
         NSURLSession *session = [NSURLSession sessionWithConfiguration:configuration];
         NSURL *url = [[NSURL alloc] initWithString:@"http://blog.csdn.net/jolie_yang"];
@@ -175,12 +183,27 @@
             }
             if (data) {
                 completionHandler(UIBackgroundFetchResultNewData);
+                NSLog(@"show data:%@", data);
             }
         }];
         [task resume];
     } else {
         completionHandler(UIBackgroundFetchResultNoData);
     }
+}
+// 本地通知-接收用户点击通知提示信息自定义按钮事件
+- (void)application:(UIApplication *)application handleActionWithIdentifier:(nullable NSString *)identifier forLocalNotification:(UILocalNotification *)notification completionHandler:(void(^)())completionHandler {
+    // identifier为CategoryAction的唯一标识符
+    if ([identifier isEqualToString:@"Accept_identifier"]) {
+        NSLog(@"rose show invite");
+    }
+    completionHandler();
+}
+// 远程推送-接收用户点击通知提示信息自定义按钮事件
+- (void)application:(UIApplication *)application handleActionWithIdentifier:(nullable NSString *)identifier forRemoteNotification:(NSDictionary *)userInfo withResponseInfo:(NSDictionary *)responseInfo completionHandler:(void(^)())completionHandler {
+    // identifier为CategoryAction的唯一标识符
+    
+    completionHandler();
 }
 #pragma mark Tools
 - (ViewController *)showNotificationMsgOnViewController {
@@ -246,29 +269,25 @@
     
     return acceptAction;
 }
+- (UIMutableUserNotificationAction *)createUNActionObjectWithTitle:(NSString *)title {
+    UIMutableUserNotificationAction *acceptAction = [[UIMutableUserNotificationAction alloc] init];
+    acceptAction.identifier = [NSString stringWithFormat:@"%@_identifier", title];
+    acceptAction.title = title;// button上面的字
+    acceptAction.activationMode = UIUserNotificationActivationModeBackground;// 激活后台应用程序，除非已在前台 ...?没懂
+    acceptAction.destructive = NO;// ...?
+    acceptAction.authenticationRequired = NO;// 执行该操作是否需要用户的认证(指是否需要用户解锁设备才可执行该操作)
+    
+    return acceptAction;
+}
 - (UIMutableUserNotificationCategory *)createUNCategoryObject {
     UIMutableUserNotificationCategory *inviteCategory = [[UIMutableUserNotificationCategory alloc] init];
     inviteCategory.identifier = @"INVITE_CATEGORY";
-    [inviteCategory setActions:@[[self createUNActionObject]] forContext:UIUserNotificationActionContextDefault];
-    [inviteCategory setActions:@[[self createUNActionObject]] forContext:UIUserNotificationActionContextMinimal];
+    [inviteCategory setActions:@[[self createUNActionObject],[self createUNActionObjectWithTitle:@"Reject"],[self createUNActionObjectWithTitle:@"other"]] forContext:UIUserNotificationActionContextDefault];
+    [inviteCategory setActions:@[[self createUNActionObject],[self createUNActionObjectWithTitle:@"Reject"]] forContext:UIUserNotificationActionContextMinimal];// [todo]我的手机测试显示的是ContentxMinimal，所以是跟内存有关嘛?
     
     return inviteCategory;
 }
-// 本地通知-接收用户点击通知提示信息自定义按钮事件
-- (void)application:(UIApplication *)application handleActionWithIdentifier:(nullable NSString *)identifier forLocalNotification:(UILocalNotification *)notification completionHandler:(void(^)())completionHandler {
-    // identifier为CategoryAction的唯一标识符
-    if ([identifier isEqualToString:@"Accept_identifier"]) {
-        NSLog(@"rose show invite");
-    }
-    completionHandler();
-    
-}
-// 远程推送-接收用户点击通知提示信息自定义按钮事件
-- (void)application:(UIApplication *)application handleActionWithIdentifier:(nullable NSString *)identifier forRemoteNotification:(NSDictionary *)userInfo withResponseInfo:(NSDictionary *)responseInfo completionHandler:(void(^)())completionHandler {
-    // identifier为CategoryAction的唯一标识符
-    
-    completionHandler();
-}
+
 
 #pragma mark 基于地理位置的本地通知
 - (void)registLocationBasedLocalNotification {
