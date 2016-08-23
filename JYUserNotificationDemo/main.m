@@ -9,9 +9,10 @@
 #import <UIKit/UIKit.h>
 #import "AppDelegate.h"
 #import "SimpleAppDelegate.h"
+#import "LocUserNotification.h"
 
 int main(int argc, char * argv[]) {
     @autoreleasepool {
-        return UIApplicationMain(argc, argv, nil, NSStringFromClass([SimpleAppDelegate class]));
+        return UIApplicationMain(argc, argv, nil, NSStringFromClass([LocUserNotification class]));
     }
 }

@@ -8,7 +8,7 @@
 
 // https://developer.apple.com/library/ios/documentation/NetworkingInternet/Conceptual/RemoteNotificationsPG/Chapters/IPhoneOSClientImp.html#//apple_ref/doc/uid/TP40008194-CH103-SW26
 
-// http/2  实现强制使用HTTPS
+// http/2  实现强制使用HTTPS  从2015年12月网关使用HTTP/2发送远程推送请求给APNs
 
 // 消息 远程推送的有效负载数据， 使用HTTP/2支持的最大负载量为4096比特，即512字节，传统的则为256个字节。
 //{ "aps" :{
@@ -48,12 +48,15 @@
 
 @implementation SimpleAppDelegate
 
-// 每台设备会建立一个与APNs认证且加密过的长连接，并通过长连接接收推送信息。
 // 注册， 发起， 接收展示
 
+// 本地推送 由程序本身调度(schedule)和发起
+// 远程推送(remote/push notification) 服务器发起再由APNs传送到设备上
 // devicetoken 可以识别到是哪台设备的哪个应用 是基于UDID通过算法生成的标志符（算法苹果没有公开）
 // 推送信息是JSON格式
 // 远程推送是无法确保一定会送达用户设备，所以不要将一些敏感重要数据通过远程推送传送，且推送的数据是无法通过任何手段恢复的，丢失就丢失了。当APNs尝试推送信息给设备，如果设备不在线则会在有限的时间保存，等连接上设备推送给设备。但只会保存最近的一条信息，如果有多条信息发给离线的设备，新的推送信息会取代旧的信息，旧的信息也就会被丢弃。并且离线时间比较久的话，连最近的一条推送信息也会被丢弃。
+// 每台设备会建立一个与APNs认证且加密过的长连接，并通过长连接接收推送信息。
+// 网关发送推送信息给APNs服务器， 首先要在Member Center配置SSL证书，从2015年12月开始，如果是基于HTTP/2的API在开发和生产环境下只需一份证书。
 // 基于地理位置的本地推送 当用户进入或离开指定的地理范围内，会接收到推送信息。首先，应用需要支持Core Location
 // 静默通知(Silent Remote Notifications) 收到通知后，没有通知提醒，后台执行程序（更新内容操作等），用户无需点通知，打开应用，就会进入didReceiveRemoteNotification:fetchCompletionHandler回调,文档中提及如果是静默推送确保aps字典中没有alert,sound,badge等信息。在设置content-available为1的前提下， 测试了下添加alert，通知中心就会显示这条推送消息，这还叫静默通知吗,点击该信息就又进入回调中了 ！sound就是会听到声音； badge就是会看到图标，通知中心没有显示信息，但也很不友好啊。苹果设计时为什么不进行短路处理，有content-available属性值为1时就是静默通知 －－22rd,August,2016
 
